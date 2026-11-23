@@ -596,10 +596,10 @@
         <div class="stack">
           <!-- 1-Click Presets -->
           <div class="card">
-            <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:10px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px;">
               <div>
                 <div class="bold">1-Click Meal Presets</div>
-                <div class="small muted">Tap to add straight to today's log</div>
+                <div class="small muted">32 easy high-protein options · tap to add</div>
               </div>
               <select id="presetMealFilter" style="width:auto; font-size:12px; padding:5px 8px;">
                 <option value="all">All Slots</option>
@@ -609,6 +609,7 @@
                 <option value="Dinner">Dinner</option>
               </select>
             </div>
+            <input id="presetSearch" type="text" placeholder="Search presets (e.g. egg, chicken, paneer, fish, soya)…" style="margin-bottom:8px; font-size:12px; padding:6px 10px;" />
             <div id="presetList" class="preset-list"></div>
           </div>
 
@@ -656,10 +657,11 @@
 
         <!-- Right column: Logged Meals -->
         <div class="card">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px;">
             <div>
               <div class="bold">Logged Meals — <span id="activeDateLabel" style="color:var(--primary);"></span></div>
-              <div class="small muted">Grouped by meal slot with calorie &amp; protein totals</div>
+              <div class="small muted">Grouped by meal slot · mark any meal as skipped if fasting</div>
+              <div id="skippedSummary" class="small" style="margin-top:4px; color:var(--warning); display:none;"></div>
             </div>
             <button id="clearDayBtn" class="btn-ghost small" style="cursor:pointer;">Clear day</button>
           </div>
@@ -877,17 +879,52 @@
       }
 
       const DEFAULT_PRESETS = [
+        // Breakfast (8)
         { id: 'p1', name: 'Overnight Oats + 1 Scoop Whey + ½ Banana', slot: 'Breakfast', cal: 400, p: 32, c: 52, f: 7 },
         { id: 'p2', name: '2 Whole Eggs + 3 Whites + 2 Toast + Fruit', slot: 'Breakfast', cal: 410, p: 30, c: 42, f: 13 },
+        { id: 'p11', name: '3-Egg Veggie Omelette (1 tsp oil) + 2 Brown Bread', slot: 'Breakfast', cal: 390, p: 24, c: 30, f: 18 },
+        { id: 'p12', name: 'Paneer Bhurji (100g low-fat) + 2 Phulkas', slot: 'Breakfast', cal: 410, p: 26, c: 40, f: 14 },
+        { id: 'p13', name: 'Moong Dal Chilla (2) + 100g Curd + 2 Egg Whites', slot: 'Breakfast', cal: 380, p: 27, c: 44, f: 9 },
+        { id: 'p14', name: 'Whey Protein Smoothie (1 Scoop + Skim Milk + Oats)', slot: 'Breakfast', cal: 360, p: 34, c: 42, f: 5 },
+        { id: 'p15', name: 'Greek Yogurt Bowl (200g) + 30g Muesli + Apple', slot: 'Breakfast', cal: 350, p: 24, c: 46, f: 7 },
+        { id: 'p16', name: 'Boiled Eggs (2 Whole + 3 Whites) + 1 Small Bowl Poha', slot: 'Breakfast', cal: 420, p: 28, c: 46, f: 13 },
+        // Lunch (8)
         { id: 'p3', name: 'Chicken Breast (180g raw) + 150g Rice + Salad', slot: 'Lunch', cal: 540, p: 46, c: 58, f: 10 },
         { id: 'p4', name: 'Grilled Fish (200g) + 150g Rice + Veggies', slot: 'Lunch', cal: 530, p: 44, c: 56, f: 11 },
+        { id: 'p17', name: 'Air-Fried Tandoori Chicken (180g) + 2 Rotis + Raita', slot: 'Lunch', cal: 520, p: 45, c: 48, f: 13 },
+        { id: 'p18', name: 'Egg Curry (2 Whole + 3 Whites, light) + 150g Rice', slot: 'Lunch', cal: 510, p: 32, c: 56, f: 16 },
+        { id: 'p19', name: 'Soya Chunks Pulao (60g dry soya + 100g rice) + Curd', slot: 'Lunch', cal: 500, p: 38, c: 64, f: 8 },
+        { id: 'p20', name: 'Grilled Prawns (200g) + 150g Rice + Stir-Fry Veggies', slot: 'Lunch', cal: 490, p: 42, c: 56, f: 8 },
+        { id: 'p21', name: 'Grilled Chicken / Tuna Sandwich (2 Slices + Curd Dip)', slot: 'Lunch', cal: 510, p: 42, c: 44, f: 14 },
+        { id: 'p22', name: 'Dal / Rajma (1 bowl) + 100g Chicken + 120g Rice', slot: 'Lunch', cal: 550, p: 38, c: 66, f: 10 },
+        // Snack (8)
         { id: 'p5', name: '1 Scoop Whey Protein + 1 Medium Banana', slot: 'Snack', cal: 230, p: 25, c: 28, f: 2 },
         { id: 'p6', name: '200g Low-Fat Greek Yogurt + 10 Almonds', slot: 'Snack', cal: 240, p: 22, c: 12, f: 11 },
         { id: 'p7', name: '3 Boiled Egg Whites + 1 Whole Egg + Fruit', slot: 'Snack', cal: 225, p: 20, c: 22, f: 6 },
+        { id: 'p23', name: '1 Scoop Whey Protein in Water (Zero Prep)', slot: 'Snack', cal: 120, p: 24, c: 3, f: 1 },
+        { id: 'p24', name: 'Roasted Chana (50g) + 2 Boiled Egg Whites', slot: 'Snack', cal: 215, p: 17, c: 29, f: 3 },
+        { id: 'p25', name: 'Air-Fried Chicken Tikka Bites (100g raw)', slot: 'Snack', cal: 170, p: 24, c: 2, f: 6 },
+        { id: 'p26', name: 'Roasted Makhana (30g) + 150g Low-Fat Curd', slot: 'Snack', cal: 210, p: 11, c: 30, f: 4 },
+        { id: 'p27', name: '100g Low-Fat Paneer Cubes (Chaat Masala) + Cucumber', slot: 'Snack', cal: 195, p: 20, c: 6, f: 10 },
+        // Dinner (8)
         { id: 'p8', name: 'Chicken Strips (150g raw) + 2 Whole-Wheat Wraps', slot: 'Dinner', cal: 540, p: 40, c: 62, f: 12 },
         { id: 'p9', name: 'Egg Bhurji (2 Whole + 4 Whites) + 2 Rotis + Salad', slot: 'Dinner', cal: 520, p: 35, c: 54, f: 16 },
-        { id: 'p10', name: 'Grilled Chicken (180g) + 120g Rice + Veggies + 1 tsp Oil', slot: 'Dinner', cal: 510, p: 45, c: 48, f: 12 }
+        { id: 'p10', name: 'Grilled Chicken (180g) + 120g Rice + Veggies + 1 tsp Oil', slot: 'Dinner', cal: 510, p: 45, c: 48, f: 12 },
+        { id: 'p28', name: 'Pan-Seared Fish (200g) + 200g Boiled Sweet Potato + Salad', slot: 'Dinner', cal: 480, p: 42, c: 48, f: 10 },
+        { id: 'p29', name: 'Chicken & Veggie Stir-Fry (180g Chicken) + 1 Roti', slot: 'Dinner', cal: 470, p: 44, c: 38, f: 12 },
+        { id: 'p30', name: 'Grilled Paneer Tikka (150g low-fat) + 2 Rotis + Chutney', slot: 'Dinner', cal: 520, p: 34, c: 48, f: 18 },
+        { id: 'p31', name: 'High-Protein Chicken Soup (180g Chicken) + 2 Toast', slot: 'Dinner', cal: 450, p: 44, c: 36, f: 10 },
+        { id: 'p32', name: 'Soya Chunks Stir-Fry (60g dry) + 2 Egg Whites + 2 Rotis', slot: 'Dinner', cal: 510, p: 42, c: 58, f: 8 }
       ];
+
+      function mergeDefaultPresets(existing) {
+        const list = Array.isArray(existing) ? existing.slice() : [];
+        const ids = new Set(list.map(x => x.id));
+        DEFAULT_PRESETS.forEach(p => {
+          if (!ids.has(p.id)) list.push(p);
+        });
+        return list;
+      }
 
       const DEFAULT_PREP = [
         { id: 'c1', text: 'Batch-cook 1 kg marinated chicken breast (air-fry / bake / pan-sear)', done: false },
@@ -922,7 +959,9 @@
         try {
           const raw = localStorage.getItem(STORAGE_KEY);
           if (!raw) return defaultState();
-          return Object.assign(defaultState(), JSON.parse(raw));
+          const merged = Object.assign(defaultState(), JSON.parse(raw));
+          merged.presets = mergeDefaultPresets(merged.presets);
+          return merged;
         } catch (e) {
           return defaultState();
         }
@@ -942,7 +981,10 @@
 
       function ensureDay(dateStr) {
         if (!state.days[dateStr]) {
-          state.days[dateStr] = { meals: [], waterMl: 0, steps: 0, workout: false };
+          state.days[dateStr] = { meals: [], skipped: {}, waterMl: 0, steps: 0, workout: false };
+        }
+        if (!state.days[dateStr].skipped) {
+          state.days[dateStr].skipped = {};
         }
         return state.days[dateStr];
       }
@@ -1266,9 +1308,17 @@
 
       function renderPresets() {
         const filter = presetMealFilter.value;
-        const items = state.presets.filter(p => filter === 'all' || p.slot === filter);
+        const query = (document.getElementById('presetSearch').value || '').trim().toLowerCase();
+        const items = state.presets.filter(p =>
+          (filter === 'all' || p.slot === filter) &&
+          (!query || p.name.toLowerCase().includes(query) || p.slot.toLowerCase().includes(query))
+        );
         const list = document.getElementById('presetList');
         list.innerHTML = '';
+        if (!items.length) {
+          list.innerHTML = '<div class="small muted" style="padding:8px 2px;">No matching presets found.</div>';
+          return;
+        }
         items.forEach(item => {
           const btn = document.createElement('button');
           btn.type = 'button';
@@ -1287,6 +1337,7 @@
           `;
           btn.addEventListener('click', () => {
             const day = ensureDay(activeDate);
+            delete day.skipped[item.slot];
             day.meals.push({
               id: 'm_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
               name: item.name, slot: item.slot, cal: item.cal, p: item.p, c: item.c, f: item.f
@@ -1302,21 +1353,69 @@
         const slots = ['Breakfast', 'Lunch', 'Snack', 'Dinner'];
         const wrap = document.getElementById('mealLogContainer');
         wrap.innerHTML = '';
+
+        const skippedSlots = slots.filter(s => day.skipped && day.skipped[s]);
+        const skipSummaryEl = document.getElementById('skippedSummary');
+        if (skippedSlots.length) {
+          skipSummaryEl.textContent = `Skipped today: ${skippedSlots.join(', ')}`;
+          skipSummaryEl.style.display = 'block';
+        } else {
+          skipSummaryEl.style.display = 'none';
+        }
+
         slots.forEach(slot => {
           const slotMeals = day.meals.filter(m => m.slot === slot);
+          const isSkipped = Boolean(day.skipped && day.skipped[slot]) && slotMeals.length === 0;
           const subCal = slotMeals.reduce((s, m) => s + (Number(m.cal) || 0), 0);
           const subP = slotMeals.reduce((s, m) => s + (Number(m.p) || 0), 0);
 
           const group = document.createElement('div');
           group.className = 'meal-group';
-          group.innerHTML = `
-            <div class="meal-group-head">
-              <span>${slot}</span>
+          if (isSkipped) {
+            group.style.borderStyle = 'dashed';
+            group.style.opacity = '0.88';
+          }
+
+          const head = document.createElement('div');
+          head.className = 'meal-group-head';
+          head.style.alignItems = 'center';
+
+          const leftHtml = isSkipped
+            ? `<span style="display:inline-flex; align-items:center; gap:6px;">${slot} <span style="font-size:11px; padding:1px 7px; border-radius:999px; background:var(--card); border:1px solid var(--warning); color:var(--warning);">Skipped</span></span>`
+            : `<span>${slot}</span>`;
+
+          const actionBtnHtml = isSkipped
+            ? `<button type="button" data-skip-toggle="${slot}" class="btn btn-sm" style="padding:2px 8px; font-size:11px;">Undo</button>`
+            : (slotMeals.length === 0
+              ? `<button type="button" data-skip-toggle="${slot}" class="btn btn-sm" style="padding:2px 8px; font-size:11px; color:var(--muted);">Skip</button>`
+              : '');
+
+          head.innerHTML = `
+            ${leftHtml}
+            <span class="inline-row" style="gap:8px;">
               <span class="muted tabular">${subCal} kcal · ${Math.round(subP)}g protein</span>
-            </div>
+              ${actionBtnHtml}
+            </span>
           `;
 
-          if (!slotMeals.length) {
+          const skipBtn = head.querySelector('[data-skip-toggle]');
+          if (skipBtn) {
+            skipBtn.addEventListener('click', () => {
+              if (day.skipped[slot]) delete day.skipped[slot];
+              else day.skipped[slot] = true;
+              saveState();
+              renderAll();
+            });
+          }
+          group.appendChild(head);
+
+          if (isSkipped) {
+            const skippedRow = document.createElement('div');
+            skippedRow.className = 'small muted';
+            skippedRow.style.padding = '9px 12px';
+            skippedRow.textContent = '⏭ Marked as skipped (0 kcal)';
+            group.appendChild(skippedRow);
+          } else if (!slotMeals.length) {
             const empty = document.createElement('div');
             empty.className = 'small muted';
             empty.style.padding = '9px 12px';
@@ -1493,6 +1592,7 @@
       document.getElementById('nextDayBtn').addEventListener('click', () => { activeDate = addDays(activeDate, 1); renderAll(); });
       document.getElementById('todayBtn').addEventListener('click', () => { activeDate = getTodayStr(); renderAll(); });
       presetMealFilter.addEventListener('change', renderPresets);
+      document.getElementById('presetSearch').addEventListener('input', renderPresets);
 
       document.getElementById('waterPlus').addEventListener('click', () => { const d = ensureDay(activeDate); d.waterMl = (d.waterMl || 0) + 250; saveState(); renderAll(); });
       document.getElementById('waterMinus').addEventListener('click', () => { const d = ensureDay(activeDate); d.waterMl = Math.max(0, (d.waterMl || 0) - 250); saveState(); renderAll(); });
@@ -1523,7 +1623,9 @@
         const savePreset = document.getElementById('saveAsPreset').checked;
         if (!name) return;
 
-        ensureDay(activeDate).meals.push({ id: 'm_' + Date.now(), name, slot, cal, p, c, f });
+        const day = ensureDay(activeDate);
+        delete day.skipped[slot];
+        day.meals.push({ id: 'm_' + Date.now(), name, slot, cal, p, c, f });
         if (savePreset) state.presets.unshift({ id: 'p_' + Date.now(), name, slot, cal, p, c, f });
         e.target.reset();
         document.getElementById('foodP').value = 0;
@@ -1534,7 +1636,9 @@
       });
 
       document.getElementById('clearDayBtn').addEventListener('click', () => {
-        ensureDay(activeDate).meals = [];
+        const day = ensureDay(activeDate);
+        day.meals = [];
+        day.skipped = {};
         saveState();
         renderAll();
       });
